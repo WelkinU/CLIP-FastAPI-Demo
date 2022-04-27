@@ -1,0 +1,229 @@
+{% extends "layout_template.html" %}
+
+<head>
+  <title>{% block title %} CLIP Demo {% endblock %}</title>
+
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- jQuery first, then Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js" crossorigin="anonymous"></script>
+  <!-- Bootstrap CSS, plugins -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+</head>
+
+{% block content %}
+<body style="overflow-x: hidden">
+  <h2> Image To CLIP Results </h2>
+
+  <div class="row">
+    <p> Enter the categories you want to select between in the textarea below (seperated by commas). Then drag and drop an image into the box below - it can be a web image or local file.</p>
+
+    <div class="mb-3">
+      <label for="categoryTextarea" class="form-label"><b>Enter Category Labels</b></label>
+      <textarea class="form-control" id="categoryTextarea" rows="3">highway, city street, rural road, suburban or residential street, rotary, parking lot, inside tunnel or traveling through tunnel, underneath bridge or underpass</textarea>
+    </div>
+  </div>
+  <br>
+  <div class="row">
+     <div class="col">
+      <div id="drop-region" style="border: 3px dashed limegreen; height: 150px;">
+        <div class="drop-message">
+            Drag & Drop images or click to upload
+        </div>
+      </div>
+      <!-- Create uploaded image display zone. Using transparent pixel "hack" to make border hidden-->
+      <img id='uploadedImage' height="270" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
+    </div>
+    <div class="col">
+      <h4>Classification Results</h4>
+      <p id='NNoutput' style="white-space:pre"></p>
+    </div>
+  </div>
+
+</body>
+
+<script type="text/javascript">
+  // where files are dropped + file selector is opened
+  var dropRegion = document.getElementById("drop-region");
+  // where images are previewed
+  var imagePreviewRegion = document.getElementById("image-preview");
+
+  // open file selector when clicked on the drop region
+  var fakeInput = document.createElement("input");
+  fakeInput.type = "file";
+  fakeInput.accept = "image/*";
+  fakeInput.multiple = false; //dont allow multiple file upload
+  dropRegion.addEventListener('click', function() {
+      fakeInput.click();
+  });
+
+  function validateImage(image) {
+    // check the type
+    var validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (validTypes.indexOf( image.type ) === -1) {
+        alert("Invalid File Type");
+        return false;
+    }
+
+    // check the size
+    var maxSizeInBytes = 10e6; // 10MB
+    if (image.size > maxSizeInBytes) {
+        alert("File too large");
+        return false;
+    }
+
+    return true;
+  }
+
+  function handleFiles(files) {
+    for (var i = 0, len = files.length; i < len; i++) {
+        if (validateImage(files[i]))
+            previewAnduploadImage(files[i]);
+    }
+  }
+  
+  fakeInput.addEventListener("change", function() {
+    var files = fakeInput.files;
+    handleFiles(files);
+  });
+  function preventDefault(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  dropRegion.addEventListener('dragenter', preventDefault, false);
+  dropRegion.addEventListener('dragleave', preventDefault, false);
+  dropRegion.addEventListener('dragover', preventDefault, false);
+  dropRegion.addEventListener('drop', preventDefault, false);
+
+  function handleDrop(e) {
+    var data = e.dataTransfer,
+        files = data.files;
+
+    handleFiles(files)      
+  }
+
+  dropRegion.addEventListener('drop', handleDrop, false);
+
+  function handleDrop(e) {
+    var data = e.dataTransfer,
+        files = data.files;
+
+    handleFiles(files)      
+  }
+
+  dropRegion.addEventListener('drop', handleDrop, false);
+
+  function handleDrop(e) {
+    var dt = e.dataTransfer,
+        files = dt.files;
+
+    if (files.length) {
+        handleFiles(files);
+    } else {
+        // check for img
+        var html = dt.getData('text/html'),
+            match = html && /\bsrc="?([^"\s]+)"?\s*/.exec(html),
+            url = match && match[1];
+
+        if (url) {
+            uploadImageFromURL(url);
+            return;
+        }
+    }
+
+    function uploadImageFromURL(url) {
+        var img = new Image;
+        var c = document.createElement("canvas");
+        var ctx = c.getContext("2d");
+
+        img.onload = function() {
+            c.width = this.naturalWidth;     // update canvas size to match image
+            c.height = this.naturalHeight;
+            ctx.drawImage(this, 0, 0);       // draw in image
+            c.toBlob(function(blob) {        // get content as PNG blob
+
+                // call our main function
+                handleFiles( [blob] );
+
+            }, "image/png");
+        };
+        img.onerror = function() {
+            alert("Error in uploading");
+        }
+        img.crossOrigin = "";              // if from different origin
+        img.src = url;
+    }
+  }
+
+  function previewAnduploadImage(image) {
+
+      // container
+      var img = document.getElementById("uploadedImage")
+
+      // read the image...
+      var reader = new FileReader();
+      reader.onload = function(e) {
+          img.src = e.target.result;
+      }
+      reader.readAsDataURL(image);
+
+      // create FormData
+      var formData = new FormData();
+      formData.append('file', image);
+
+      category_list = $('#categoryTextarea').val().split(",");
+      category_list = category_list.map(el => el.trim()); //remove whitespace at beginning/end of category
+      formData.append('category_list', category_list);
+
+      $.ajax({
+        url: '/predict_demo',
+        data: formData,
+        processData: false,
+        contentType: false,
+        type: 'POST',
+        success: function(data){
+          probs = JSON.parse(data.probs);
+
+          multisort(probs, [category_list]);
+          console.log(probs);
+          console.log(category_list);
+
+          output_text = "";
+          for (var i = 0; i < category_list.length; i++) { 
+            output_text += category_list[i] + ": " + (probs[i] * 100).toFixed(5) + "%\n"; 
+          }
+          $('#NNoutput').text(output_text)
+        },
+        error: function(xhr, ajaxOptions, thrownError){
+                  alert("Error code " + xhr.status + ": " + thrownError + '\nMessage: ' + JSON.parse(xhr.responseText)['message']);
+              },
+      });
+      
+  }
+
+  function multisort(sortBy,otherArrays){
+  var keys=[],i,tmpKeys;
+  sortBy.sort(function(a,b){
+    var ret=(a>b)?-1:(a<b)?1:0;
+    // storing the return values to be used for the other arrays
+    keys.push(ret);
+    return ret;
+  });
+  for(i=0;i<otherArrays.length;i++){
+    // copy the stored retun values
+    tmpKeys=keys.concat([]);
+    otherArrays[i].sort(function(){
+      // return the saved values based on sortBy array's sort
+      return tmpKeys.splice(0,1);
+    });
+  }
+
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,11 @@
+# CLIP requirements
+ftfy
+regex
+tqdm
+-f git+https://github.com/openai/CLIP.git
+
+# FastAPI
+fastapi
+
+# Other
+pillow

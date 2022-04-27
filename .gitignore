@@ -1,0 +1,7 @@
+__pycache__/*
+data/*
+bdd100k/__pycache__
+*.pt
+*.pyc
+
+batch0.png
