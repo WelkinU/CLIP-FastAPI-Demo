@@ -17,22 +17,23 @@
 
 {% block content %}
 <body style="overflow-x: hidden">
-  <h2> Image To CLIP Results </h2>
-
-  <div class="row">
-    <p> Enter the categories you want to select between in the textarea below (seperated by commas). Then drag and drop an image into the box below - it can be a web image or local file.</p>
-
+  <div class="row mx-1 mt-2">
     <div class="mb-3">
+      <p class="lh-sm"> Enter the categories you want to select between in the textarea below seperated by commas. Then drag and drop an image into the box below.</p>
+
       <label for="categoryTextarea" class="form-label"><b>Enter Category Labels</b></label>
-      <textarea class="form-control" id="categoryTextarea" rows="3">highway, city street, rural road, suburban or residential street, rotary, parking lot, inside tunnel or traveling through tunnel, underneath bridge or underpass</textarea>
+      <textarea class="form-control" id="categoryTextarea" rows="3">dog, cat photo, snowy road, spaceship launching</textarea>
     </div>
   </div>
   <br>
-  <div class="row">
+  <div class="row mx-1">
      <div class="col">
       <div id="drop-region" style="border: 3px dashed limegreen; height: 150px;">
-        <div class="drop-message">
-            Drag & Drop images or click to upload
+        <div class="container-fluid">
+          <div class="d-flex justify-content-center align-items-center h-100">
+              Drag & Drop Images Or Click To Upload
+          </div>
+
         </div>
       </div>
       <!-- Create uploaded image display zone. Using transparent pixel "hack" to make border hidden-->
