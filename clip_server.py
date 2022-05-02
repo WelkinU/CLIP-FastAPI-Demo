@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Form, Request, File, UploadFile
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 
 import torch
@@ -15,8 +15,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 @app.get("/")
 async def detect(request: Request):
-    '''
-    Returns GUI HTML / Javascript template for the Detect Run web form
+    '''Returns GUI HTML / Javascript template for the Detect Run web form
     '''
     return templates.TemplateResponse('detect_form.html', {
             "request": request,
@@ -24,7 +23,7 @@ async def detect(request: Request):
 
 @app.post('/predict_demo')
 async def predict(file: UploadFile = File(...), category_list: str = Form(...)):
-    ''' Intended to be called by AJAX request from Detect web form
+    ''' Intended to be called from detect_form.html
     '''
     category_list = category_list.replace('[','').replace(']','')
     category_list = [s.strip() for s in category_list.split(',')]
@@ -39,7 +38,6 @@ async def predict(file: UploadFile = File(...), category_list: str = Form(...)):
         probs = logits_per_image.softmax(dim=-1).cpu().numpy()
 
     print(category_list)
-    #print("Label probs:", probs)  # prints: [[0.9927937  0.00421068 0.00299572]]
     print(str(list(probs[0])))
 
     return JSONResponse({'probs':str(list(probs[0]))},
@@ -66,16 +64,16 @@ if __name__ == '__main__':
 
     available_clip_models = clip.available_models()
     default_clip_model = "ViT-B/32"
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', help='IP Address where the server is hosted', type=str, default='localhost')
     parser.add_argument('--port', help='Port number where the server is hosted', type=int, default='8000')
-    parser.add_argument('--model', help=f'CLIP models - All models: {available_clip_models}', type=str, default=default_clip_model)
-    parser.add_argument('--prod', action='store_true', help='Default to local IPv4 as host, and no reload.')
+    parser.add_argument('--model', help=f'CLIP models - All models: {available_clip_models}', 
+                        type=str, default=default_clip_model, choices=available_clip_models)
+    parser.add_argument('--prod', action='store_true', help='Default to local IPv4 as host, and reload set to False.')
     args = parser.parse_args()
 
-    assert args.model in available_clip_models, f'--model arg must be in {available_clip_models}'
     current_filename = os.path.splitext(os.path.basename(__file__))[0]
-
     if args.prod:
         import socket #for getting IPv4 address for get_ip() function
         uvicorn.run(f"{current_filename}:app", host=get_ip(), port=args.port, reload=False)
