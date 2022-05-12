@@ -8,10 +8,10 @@ from PIL import Image
 from io import BytesIO
 import os.path
 
+import argparse
+
 app = FastAPI()
 templates = Jinja2Templates(directory = 'templates')
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
 
 @app.get("/")
 async def detect(request: Request):
@@ -31,8 +31,8 @@ async def predict(file: UploadFile = File(...), category_list: str = Form(...)):
     image = preprocess(Image.open(BytesIO(await file.read()))).unsqueeze(0).to(device)
 
     with torch.no_grad():
-        image_features = model.encode_image(image)
-        text_features = model.encode_text(text)
+        #image_features = model.encode_image(image)
+        #text_features = model.encode_text(text)
         
         logits_per_image, logits_per_text = model(image, text)
         probs = logits_per_image.softmax(dim=-1).cpu().numpy()
@@ -58,20 +58,22 @@ def get_ip():
         s.close()
     return IP
 
+
+#This cpde block has to be outside the if __name__ == '__main__' block to have globals set properly in worker processes
+available_clip_models = clip.available_models()
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--host', help='IP Address where the server is hosted', type=str, default='localhost')
+parser.add_argument('--port', help='Port number where the server is hosted', type=int, default='8000')
+parser.add_argument('--model', help=f'CLIP models - All models: {available_clip_models}', type=str, default="ViT-B/32")
+parser.add_argument('--prod', action='store_true', help='Default to local IPv4 as host, and reload set to False.')
+args = parser.parse_args()
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model, preprocess = clip.load(args.model, device=device)
+
 if __name__ == '__main__':
     import uvicorn
-    import argparse
-
-    available_clip_models = clip.available_models()
-    default_clip_model = "ViT-B/32"
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--host', help='IP Address where the server is hosted', type=str, default='localhost')
-    parser.add_argument('--port', help='Port number where the server is hosted', type=int, default='8000')
-    parser.add_argument('--model', help=f'CLIP models - All models: {available_clip_models}', 
-                        type=str, default=default_clip_model, choices=available_clip_models)
-    parser.add_argument('--prod', action='store_true', help='Default to local IPv4 as host, and reload set to False.')
-    args = parser.parse_args()
 
     current_filename = os.path.splitext(os.path.basename(__file__))[0]
     if args.prod:
@@ -79,9 +81,3 @@ if __name__ == '__main__':
         uvicorn.run(f"{current_filename}:app", host=get_ip(), port=args.port, reload=False)
     else:
         uvicorn.run(f"{current_filename}:app", host=args.host, port=args.port, reload=True)
-
-    model, preprocess = clip.load(args.model, device=device)
-
-else:
-    model, preprocess = clip.load("ViT-B/32", device=device) #in case this is somehow imported
-
