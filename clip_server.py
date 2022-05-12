@@ -58,6 +58,32 @@ def get_ip():
         s.close()
     return IP
 
+def select_device(device=''):
+    ''' Modified from https://github.com/ultralytics/yolov5/blob/4870064629e76d9d387578c562a292cc680fa05f/utils/torch_utils.py#L52
+     device = 'cpu' or '0' or '0,1,2,3' '''
+    s = f''  # string
+    device = str(device).strip().lower().replace('cuda:', '')  # to string, 'cuda:0' to '0'
+    cpu = device == 'cpu'
+    if cpu:
+        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # force torch.cuda.is_available() = False
+    elif device:  # non-cpu device requested
+        os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable - must be before assert is_available()
+        assert torch.cuda.is_available() and torch.cuda.device_count() >= len(device.replace(',', '')), \
+            f"Invalid CUDA '--device {device}' requested, use '--device cpu' or pass valid CUDA device(s)"
+
+    cuda = not cpu and torch.cuda.is_available()
+    if cuda:
+        devices = device.split(',') if device else '0'  # range(torch.cuda.device_count())  # i.e. 0,1,6,7
+        n = len(devices)  # device count
+        space = ' ' * (len(s) + 1)
+        for i, d in enumerate(devices):
+            p = torch.cuda.get_device_properties(i)
+            s += f"{'' if i == 0 else space}CUDA:{d} ({p.name}, {p.total_memory / (1 << 20):.0f}MiB)\n"  # bytes to MB
+    else:
+        s += 'CPU\n'
+
+    print(s)
+    return torch.device('cuda:0' if cuda else 'cpu')
 
 #This cpde block has to be outside the if __name__ == '__main__' block to have globals set properly in worker processes
 available_clip_models = clip.available_models()
@@ -66,10 +92,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--host', help='IP Address where the server is hosted', type=str, default='localhost')
 parser.add_argument('--port', help='Port number where the server is hosted', type=int, default='8000')
 parser.add_argument('--model', help=f'CLIP models - All models: {available_clip_models}', type=str, default="ViT-B/32")
+parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
 parser.add_argument('--prod', action='store_true', help='Default to local IPv4 as host, and reload set to False.')
 args = parser.parse_args()
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = select_device(args.device)
 model, preprocess = clip.load(args.model, device=device)
 
 if __name__ == '__main__':

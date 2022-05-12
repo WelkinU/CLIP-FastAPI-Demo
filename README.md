@@ -15,6 +15,7 @@ In the command prompt, use `python clip_server.py` to start the web server. By d
 | `--host` | localhost |Update host parameter |
 | `--port` | 8000 | Update port parameter |
 | `--model` | ViT-B/32 |Set CLIP model to use.  See [OpenAI's CLIP Blog Post](https://openai.com/blog/clip/) for model metrics / GFLOPs. Current available models: RN50 RN101 RN50x4 RN50x16 RN50x64 ViT-B/32 ViT-B/16 ViT-L/14 ViT-L/14@336px
+| `--device` |  | CUDA device, i.e. 0 or 0,1,2,3 or cpu |
 | `--prod` | False | Convienience flag that sets host to local IPv4 address. Does not reload the server upon code updates/saves. |
 
 ## Dependencies
