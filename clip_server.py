@@ -85,15 +85,14 @@ def select_device(device=''):
     print(s)
     return torch.device('cuda:0' if cuda else 'cpu')
 
-#This cpde block has to be outside the if __name__ == '__main__' block to have globals set properly in worker processes
-available_clip_models = clip.available_models()
-
+#This code block has to be outside the if __name__ == '__main__' block to have globals set properly in worker processes
 parser = argparse.ArgumentParser()
 parser.add_argument('--host', help='IP Address where the server is hosted', type=str, default='localhost')
 parser.add_argument('--port', help='Port number where the server is hosted', type=int, default='8000')
-parser.add_argument('--model', help=f'CLIP models - All models: {available_clip_models}', type=str, default="ViT-B/32")
+parser.add_argument('--model', help=f'CLIP models - All models: {clip.available_models()}', type=str, default="ViT-B/32")
 parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-parser.add_argument('--prod', action='store_true', help='Default to local IPv4 as host, and reload set to False.')
+parser.add_argument('--prod', action='store_true', 
+                help='Convenience function for setting to local IPv4 as host, and reload set to False.')
 args = parser.parse_args()
 
 device = select_device(args.device)
