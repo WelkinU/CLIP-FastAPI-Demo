@@ -20,6 +20,8 @@ In the command prompt, use `python clip_server.py` to start the web server. By d
 
 ## Dependencies
 
+Can use `pip install -r requirements.txt` or...
+
 ### CLIP Dependancies
 
 1. Make sure you have PyTorch / torchvision installed.
