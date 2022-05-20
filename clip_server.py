@@ -82,7 +82,6 @@ def select_device(device=''):
     else:
         s += 'CPU\n'
 
-    print(s)
     return torch.device('cuda:0' if cuda else 'cpu')
 
 #This code block has to be outside the if __name__ == '__main__' block to have globals set properly in worker processes
